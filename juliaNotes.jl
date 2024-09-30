@@ -591,6 +591,161 @@ rand(Int64, 10);
 rand(Int64,(5,3)); # random matrix
 
 
+# Data Structures
+
+# TUPLES
+# Immutable Finite sequence or ordered list of numbers or, more generally, mathematical objects (not needed to be same time)
+
+tpl1= (10, "Julia", 1.7)
+tpl2 = tuple(1010, "Juliana", "3545.4") # NOTE: tuple -> function, Tuple -> DataType
+tpl3 = 10, 2.34, "hii"
+
+# named tuple: if you decide - go with only named tuple or dont name them at all
+tpl4 = (name="abc", class="X",age = 15.32);
+tpl4.name
+tpl4.class
+typeof(tpl4) # gives @NamedTuple{name::String, class::String, age::Float64}
+
+# using tuple elements to assign variables
+x,y,z = tpl4
+
+# single element tuple
+x = (2) # just an Int64 and not a tuple
+tpl1 = (1.434, ) # leave a comma  after the first element
+
+supertype(Tuple) # gives Any
+typeof(tpl) # gives Tuple{Int64, String, Float64}
+
+
+# Tuples are immutable - the comparisons happen with === and bit level comparisons take place, where it is stored
+tpl1 = (1,"hellow",24.5)
+tpl2 = (1,"hellow",24.5)
+tpl1 === tpl2 # gives true
+
+# Acces tuple elements
+tp1[3]
+tp2[2:3]
+
+# Try to change values inside tuple - it will error out
+tpl1[1] = "zsdfgbf" # error
+# NTUPLE
+# all elements same type tuple
+t = (1,5,3,76,9,4) # typeof(t) : gives NTuple{6, Int64}
+
+# defining ntuple with logic: arrayfun MATLAB equivalent but only MATLAB's 1:N can be utilised
+ntuple(x-> x^3, 5) # (1, 8, 27, 64, 125)
+
+# IN and NOTIN functions - equivalent to MATLAB contains but reversed arg order
+in(1,t) # true because 1 is in t
+#\in+TAB  ∈
+#\notin+TAB ∉
+1 ∈ t # same as before, returns true
+200 ∉ t # returns false because 200 does not belong in t
+
+# Dictionaries DICT() - KEY VALUE PAIRS - mutable
+d1 = Dict()
+d1 = Dict([("day",2),("week",23),("year",1993)])
+d2 = Dict("day"=>31 ,"week"=>2, "year"=>1994);
+d1["abc"] =23243243; # works as this is mutable
+length(d1) # gives 3
+d1.keys # produces junk also
+d1.vals # produces junk also
+# use this instead
+keys(d1) # gives a ValueIterator
+values(d1)
+
+# out of bounds key will error out - key not found
+d1["rfghfgsgszfgb"]
+"agasagagrgarfgag" ∈ keys(d1) # gives false as keys(d1) is a ValueIterator
+haskey(d1, "abc")
+# get fcn: with an assert message if not found
+get(d1, "abc", "NOT_FOUND_MSG") # returns 2
+get(d1, "argfgbgfbhsfhfgarfg", "the element is not found da") # reurns the NOT_FOUND_MSG
+
+
+
+# Merging 2 dictionaries
+d = merge(d1,d2) # if keys are identical, replacement happens the last one in the arg list takes precedence
+# merge with any function name that operates on the values
+d33 = mergewith(*,d1,d2) # Dict{String, Int64} with 3 entries:  "day"  => 62  "year" => 3974042  "week" => 46
+
+
+# Ranges and arrays:
+# Ranges derived from: Any -> AbstractVector -> AbstractRange -> OrdinalRange -> AbstractUnitRange and StepRange
+x=1:10
+y=2:2:100
+z=102.4:-2.35:34.54
+typeof(z) # StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}
+typeof(x) # UnitRange{Int64}
+superType(UnitRange) # AbstractUnitRange{T} where T<:Real
+sizeof(x) # 16 Bytes ??
+sizeof(y) # 24 Bytes ?? stores just the 3 integers mentioned in the ranges
+sizeof(z) # 48 Bytes due to storing 4 numbers within it
+
+# convert range to vector array
+v = collect(z); # 29-element Vector{Floa t64}
+sizeof(z) # 29 Float64 = 232
+
+# TIP: using ranges saves the dynamic memory during the execution of programs
+
+# range creation:
+range(start = 2.3, step = 0.232, stop = 344.2) # Float64 step range
+range(start = 2, stop = 33, length=32) # Gives a Float64 step range as opposed to Int64 because a division was involved
+range(start = 2, step = 33, length=32) # Gives Int54 step range
+LinRange(2,3,100) # Float64 LinRange
+
+
+
+# Julia Array need not be homogeneous like C, FORTRAN or MATLAB
+# ANY type array
+arrANY = [232,35434.3434, 'r', "egdfzdgfhg"] # Vector{Any}
+
+aFloat = [343.3454,654.456,46567.53] # Vector{Float64}
+aInt = [343,464,8,92345] # Vector{Int64}
+aStr = ["dfg";"rg";"rgterg"] # Vector{String}
+aMix = [aFloat, aInt, aStr] # Vector{Vector}
+isa(aMix,Vector{Vector}) # true
+
+aInt[3:-1:1] 
+
+aInt2 = [343,464,8,92345] # same content as aInt1
+aInt1 == aInt2 # true
+aInt1 === aInt2 # false because they are mutable and stored in differnt locations
+
+length(aInt) # 4
+aInt[5] = 10 # Bounds Error
+
+# Playing with array mutability: adding and removing elements of array
+append!(aInt,[22,455,678])
+push!(aInt,6662) # dont push an array (push whatever T is: Vector{T} )
+deleteat!(aInt,3) # third array index will be deleted
+deleteat!(aInt,[1,2,3]) # delete the first second and third element
+deleteat!(aInt, [2,4,3,3]) # will not work if indices are sorted(ascending) and unique
+insert!(aInt,3, 343425246) # args: array, index to insert at, number to insert
+pop!(aInt) # displays and removes the last element
+popfirst!(aInt) # displays and removes the first element (there is no poplast)
+# contd.
+typeof(aInt) # Vector{Int64}
+aInt[2] = 545.54 # Errors upcast is not possible
+aInt[3:4] = [Uint8(2), Int32(-33)] 
+typeof(aInt[3]) # gives Int64 - meaning that aInt remains with original datatype
+
+			
+# Contains (using in or \in+TAB) / subarrays (using SUBSET) comparison
+343 ∈ aInt # true
+in(2,aInt) # true
+issubset([8,92345], aInt2) # true
+ [8,92345] ∈ aInt2 # false BUT using correct symbol or function will do: 
+# \subseteq+TAB - ⊆ or issubset
+# \subsetneq+TAB - ⊊ or !issubset
+# \supseteq+TAB - ⊇ or contains
+# \supsetneq+TAB - ⊋ or ! contains
+[8,92345] ⊆ aInt2 # true
+[222,343,464,8,92345,333] ⊇ aInt2 # true
+
+
+
+
 
 
 
