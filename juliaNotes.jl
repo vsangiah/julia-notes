@@ -94,6 +94,7 @@ const MYCONST = 10.3;
 # There are abstact types that will help in the type definitions:
 abstract type TYPE_NAME end
 abstract type TYPE_NAME <: SUPER_TYPE end
+abstract type TYPE_NAME{T<:ABSTRACT_TYPE} end # for structs (later..)
 
 subtypes(Any) # lists 500 of them, Number being one of them
 
@@ -341,3 +342,257 @@ isa(10//3, Rational{Int64}) # true
 isa(im, Complex{Int64}) # false because it is independently a bool
 isa(10.0 + 3.0im, Complex)
 isa(10.0+ 3.0im, Complex{Float64})
+
+
+# Chars and strings
+# There is AbstractChar (has only Char - '<single character>'), AbractString (has String, SubString, SubstitutionString)
+ch = 'A';
+char(ch); # Char
+sizeof(ch) # gives 4Bytes same as Int32
+num = Int32(ch); # you can typecast
+#special unicode characters
+ch1 = '\u03A3';
+ch2 = '\u03B1';
+
+
+str1 = "hellow";
+typeof(str1); # gives String
+
+# MULTILINE STRING
+str2 = """ this
+is 
+a
+multiline
+string""";
+
+# Get the characters using indices of string.
+# INDICES start with 1 like MATLAB
+ch11 = str1[2]; # gives char (unlike C++ which starts with 0)
+ch12 = str[4];
+ch13 = str[begin+3];
+ch14 = str[end-1];
+
+# Get Substrings
+sst1 = str1[2:4]; # gives substring
+sst1 = str1[end-3:end];
+
+# get properties of string
+firstindex(str1) # 1
+lastindex(str1) # length of str1 - NOT ALWAYS
+length(str1) # length of str1
+
+str2 = "\alpha \beta \infty A "; #not all unicode characters are saved with single character's space
+str2[2] #will error out
+str[3] # will be space
+# here lastindex(str2)  will not match length(str)
+
+
+# Concatenation
+str1*" "*str2 # gives str1 sopace and 
+str1^4 # repeat the string 4 times
+
+#Inline expression evaluation with strings
+x=10
+y=16.4f0
+str3 = "$str1 is the first string and $str2 is the second. $x and $y adds up to $(x+y)"
+
+
+# Define your own singleton primitive datatype: using "primitive type"
+# primitive type <name of datatype> <number of bits (multiples of 8 to comply with rules of LLVM)> end
+# primitive type <name of datatype> <: <name of super type> <number of bits> end
+primitive type j505j 8 end
+
+# Composite types: structs, records or objects 
+# In Julia we cannot have member functions ( but only member variables) for these
+# Julia functions have multiple dispatch
+
+struct Cylinder
+ height::Float64
+ radius::Float64
+end
+
+filednames(Cylinder) # gives names of the fields only and not the datatype
+Cylinder.types # gives svec(Float64, Float64)
+
+C1 = Cylinder(10.43,2.47);
+C1.height
+C1.radius
+fieldnames(C1) # errors unlike MATLAB classes
+fieldnames(typeof(C1)) # gives result
+C2(10) # errors
+C3=Cylinder(10,34,667) # errors
+
+# structures once instantiated, they are immutable
+C1.height=329 # gives error, saying it cannot be changed
+
+# inorder to be flexible use mutable struct during definittion
+
+mutable struct circle
+ radius::Float64
+end
+
+# If we dont specify datatype for the members, it will default to Any - not good for production sw
+# struct itself comes with a data type Any if we dont specify - again not good for production (cosmetic impact only)
+
+supertype(circle) # gives Any
+supertype(Cylinder) # gives Any
+abstract type SolidShapes end;
+mutable struct Sphere <: SolidShapes
+ radius::Float64
+end
+supertype(Sphere) # gives SolidShapes
+
+# There is another way to group data types and use it to assert types UNIONS of abstract types
+myIntStrType = Union{Integer,AbstractString};
+x=10;
+y="str";
+z='c';
+w=12.3;
+x::myIntStrType # gives same as x
+y::myIntStrType # gives same as y because x and y are Integer or String 
+z::myIntStrType # gives error assert
+w::myIntStrType # gives error assert
+
+
+# Parametric types:
+struct ParamCircle{AnyT}
+ radius::AnyT
+end
+x = ParamCircle{Int64}(2) # succeeds creating circle x with storage of int64
+y = ParamCircle{Int64}(2.4) # errors
+z = ParamCircle{Float32}(22.2f0) # succeeds
+
+typeof(x) # gives ParamCircle{Int64}
+typeof(z) # gives ParamCircle{Float32}
+
+x = ParamCircle(2) # succeeds creating circle x with storage of int64 automatically picks types
+z = ParamCircle(22.2f0) # succeedscreating circle y with storage of Float32 automatically picks types
+
+# enforce condition on parametric type
+struct Rectangle{T <: Real}
+ x::T
+ y::T
+end
+r = Rectangle("d","4") # errors
+r1 = Rectangle(1,23) # succeeds with creation of Int64 type
+r2 = Rectangle(1,.33)  # errors as different datatypes will be needed
+
+struct Rectangle{T1 <: Real, T2 <: Real}
+ x::T1
+ y::T2
+end
+r2 = Rectangle(1,.33) # will succeed with storing different datatypes for each
+
+
+
+
+
+
+# Operations:
+# special ones:
+# \div+TAB gives division symbol: and it is used to do integer divisions
+    # otherwise this integer division is accessed by div()
+# \ - inverse division (x\y = y/x)
+# ^ - power
+# % - remainder
+   # otherwise access by rem()
+
+# tips
+x=10;
+y=44;
+3x  # same as 3*x
+2(x+4y) # same as 2*(x+4y)
+
+# weird ways
++(10y,3x) # same as 10y+3x
+
+# Comparisons
+<= # \leq+TAB
+>= # \geq+TAB
+==
+>
+<
+!= # \neq+TAB
+
+# short way to check if in a range of values
+x=10;
+y=12;
+z=15;
+x<y<z # returns true as it does this: x<y && y<z
+
+# ISAPPROX
+# 0.4 + 0.2 = 0.6000000000000001 in machine
+isequal(0.4+0.2, 0.6) # returns false due to floating point error
+isapprox(0.4+0.2,0.6, atol=0.0001) # returns true
+isapprox(0.4+0.2,0.6, atol=1e-20) # returns false
+# \approx + TAB to get symbol to do same work
+
+# DEEPCOPY and equivalence
+x=[10,12];
+y=x; # normal copy
+z=deepcopy(x); # creates another memory location
+x==y # true
+x==z # true
+x===y # true
+x===z # false because the location of storage of z is different from x
+#\equiv+TAB is same as ===
+
+
+
+# Boolean operations (nearly same as MATLAB)
+!
+&&
+||
+# bitwise operators
+~
+&
+|
+#\xor+TAB
+#\nanad+TAB
+#\nor+TAB
+>>> # logical shift right
+>> # arithmetic shift right
+<< # arithmetic shift left
+
+
+# To see Bit representation of numbers, ] add Bits package and > using Bits command 
+using Bits
+bits(4)
+
+# Short hand notations:
+x=10
+y=3
+
+x-=3
+y+=40
+x^=3
+
+# logarithms
+#\euler+TAB
+# ℯ = exp(1)
+log(ℯ) # gives 1
+log10(1000) # gives 3, same as log(10, 1000)
+log2(8) # gives 3, smae as log(2, 8)
+
+# Rounding off
+round(103.33) # rounds to nearest integer 103.0 
+ceil(222.4) # 223.0
+floor(246.3) # 246.0 # NOTE it's float64
+ 
+# absloute value and sign fcn
+sign(-103.3) # -1.0
+sign(0.0)  # 0.0
+sign(0) # 0
+sign(10) # 1
+
+# Random numbers
+rand(4) # gives 4 Float64 numbers
+rand(Int64, 10);
+rand(Int64,(5,3)); # random matrix
+
+
+
+
+
+
+
