@@ -871,6 +871,10 @@ ysim_7_8 = similar(y, 7,8) # gives randomly generated values of same Matrix{Floa
 
 # Multidimenional arrays
 
+# example for 3d arrays:
+rows = 4
+cols = 5
+layers = 3 
 
-
+M3d = Matrix{UInt8}(undef, rows, cols, layers)
 
