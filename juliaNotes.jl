@@ -743,10 +743,133 @@ issubset([8,92345], aInt2) # true
 [8,92345] ⊆ aInt2 # true
 [222,343,464,8,92345,333] ⊇ aInt2 # true
 
+# eltype, length, 
+eltype(aStr) # String
+eltype(aInt) # Int64
+length(aInt2) # 4
 
 
+## Vectors and matrices
+cv1 = [1,2,3,4] # Vector{Int64}
+rv = [1 2 3 4 5;] # Matrix{Int64}
+rvSF = [1 2 3 4] # Segmentaion fault ?? Didnt expect this
+cv2 = [1;2;3;4] # Vector{Int64}
+m = [1 2 3; 1 4 5; 2 3 1] # Matrix{Int64}
+m2 = [ 1 2 3
+	2 3 4
+	3 4 5] # Matrix{Int64}
+m3err = [1,2,3;2,3,4] # error: unexpected semicolon
+
+# sizes and lengths
+size(m2) # (3,3)
+size(m,1) # 3
+size(m,2) # 3
+length(m) # 9
+
+# accessing matrices:
+m[2,3] # 5
+m[end,end-1] # 3
+m[8] # 3
+m[100] # Segmentation fault on accessing out of bounds values
+
+m[1,:] # 1 2 3 Vector{Int64}
+
+# Concatenations:
+rv1 = [1 2 3 4 5;]
+rv2 = [6 7 8 9 10;]
+rv3 = [11 12 13 14 15;]
+hcat(rv1,rv2,rv3) # row vector Matrix{Int64}
+vcat(rv1,rv2,rv3) # matrix Matrix{Int64}
+cv1 = [1, 2, 3, 4, 5]
+cv2 = [6, 7, 8, 9, 10]
+cv3 = [11, 12, 13, 14, 15]
+hcat(cv1,cv2,cv3) # matrix Matrix{Int64}
+vcat(cv1,cv2,cv3) # column vector Vector{Int64}
+
+x1 = [cv1,cv2]  # Avoid this: Vector{Vector{Int64}}
+x2 = [rv1,rv2] # Avoid this: Vector{Matrix{Int64})
+y = [cv1;cv2]  # Vector{Int64} of 2xsize cv1 + size cv2
+z = [rv1; rv2] # Matrix{Int64} 2xsizerv1
+a = [rv1 rv2] # row vector Matirx{Int64}
+bSF = [cv1 cv2] # SegmenationFault
+b = [cv1 cv2;] # Matrix{Int64} 
 
 
+# Undefined matrix definition:
+m = Matrix(undef, 3,3) # a 3x3 Matrix{Any} has undef in all 3x3 elements # may be avoid this Any for performant code?
+# or 
+m = Matrix{Any}(undef, 3,4) 
+
+mf64 = Matrix{Float64}(undef,4,5); # 0.0 in all 4x5 elements
+
+mixM = Matrix{Union{Int64,String}}(undef, 4,5) # has undef in all 4x5 elements
+
+mf64[1:3,1:3] = 10.33; # segmentation fault
+mf64[1,3] = 10; # will be typecasted to 10.0 F64
+mf64[1,4] = 10.33;
+mf64[1,5] = "s" # segmentation fault
+mf64[1,5] = 's' # ASCII unicode number 50 will be typecasted to 50.0 F64
+
+mi64 = Matrix{Int64}(undef, 4,5)
+mi64[1,2] = 19;
+mi64[1,4] = 10.33 # segmentation fault
+
+
+# 'nothing' and 'missing'
+ntng = nothing;
+typeof(ntng) # Nothing
+sizeof(ntng) # 0 Bytes
+
+msng = missing;
+typeof(msng) # Missing
+sizeof(msng) # 0 Bytes
+
+m_ntng = Matrix{Any}(nothing, 3, 5) # size 3*4*0
+m_msng = Matrix{Any}(missing, 3, 5) # size 3*4*0
+
+
+# If you want to reuse the above missing and nothing matrices
+m_ntng(1,2) = 10.33 # but this is ANy Matrix
+
+# Proper sematics would be this:
+m1 = Matrix{Union{Int64,Nothing}} (nothing, 3,3); # size 3*3*8 - 8 comes from Int64
+
+# Reshaping matrices
+x=1:24;
+reshape(x,3,8)
+reshape(x,4) # segmentation fault
+# there s no function that is haveing a ! for reshape
+
+# Usual arrays, by default Float64:
+zeros(10,3) # Matrix{Float64}
+ones(2,4) # Matrix{Float64}
+# we can specify the datatype
+zeros(Int32, 11,3) # Matrix{Int32}
+ones(UInt8, 10,10) # Matrix{UInt8}
+
+# slightly unusual arrays
+trues(10,3) # BitMatrix
+falses(12,3) # BitMatrix
+
+
+# Vector forms
+trues(11) # BitVector
+falses(12) # BitVector
+ones(Int8, 12) # Vector{Int8}
+zeros(Float32, 12) # Vector{Float32}
+
+
+# Using fill and rand to manipulate the initialization
+x = fill(19, 4,5) # Fills Int64(19) on every 4x5 element
+y = fill(10.33, 4,5) # Fills Float64{10.33} on every element
+r = rand(1:100, 4,5) # fills random Int64 values
+
+# similar function to get a representative of the given matrix
+xsim = similar(x) # gives a randomly generated values of same Matrix{Int64} 4x5
+ysim_7_8 = similar(y, 7,8) # gives randomly generated values of same Matrix{Float64} but 7x8 dimension
+
+
+# Multidimenional arrays
 
 
 
