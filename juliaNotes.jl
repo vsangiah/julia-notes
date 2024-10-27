@@ -944,3 +944,176 @@ M3 = rand(1:100, 10,3)
 NDiv = [2 3 4] # provide row matrix
 
 MDivbyN = M3[(M3.%NDiv).== 0]
+
+
+# SETS
+# use sets for storing stuff without order to be memory efficient
+Set(V)
+Set(M3) # observe that only unique elements are there in the set
+tup = (1,2,3,4,5,5,5,6,6,6)
+Set(tup) # observe that only unique elements are there in the set
+V1=[1;3;5;7;9;11]
+V2=[5;7;9;11;13;15;17;19]
+# the folowing operations give vectors anod not sets, order will be maintained
+union(V1,V2)
+setdiff(V2,V1) 
+setdiff(V1,V2)
+intersect(V1,V2)
+intersect(V2,V1)
+symdiff(V1, V2) # order is maintained
+
+symdiff(Set(V1), Set(V2)) # order is not maintained
+
+
+
+# PROGRAM SEMATINCS:
+
+# Compound statements
+area = begin
+	r = 10
+	pi*r^2
+end
+
+area # 314.591
+r # 10 this is still accessible outside of the begin..end block
+
+volume = (r=100; 4.0/3*pi*r^3)
+
+volume #4.1887902047863905e6
+r # 100 this is still accessible outside of the block
+
+# Conditionals are same as those in MATLAB
+if condition1
+	task1
+elseif condition2
+	task2
+else
+	task99
+end
+
+# ternary conditional
+(condition1)?task1:(condition2)?task2:task99
+
+(condition)?task1:task2
+
+# Shortcicuiting the conditions and statemnt
+condition1 && statement1 # condition1 is true evaluate the statement, condition1 is false, dont do anything
+condition2 || statement2 # execute the statement only if condition is false, if condition is true, dont do anything
+
+
+# FOR loop
+for i in 1:10
+	println(i)
+end
+for i = 1:10 # like MATLAB, this works
+	println(i)
+end
+
+for i ∈ 1:10 # \in+TAB
+	println(i)
+end
+i # Error, i is accessible only inside forloop
+
+# Any iterable collection: array, tuple
+for name ∈ ["Julia", "Yulia", "Sophia"]
+	println(name)
+end
+
+for i ∈ M3
+	println(i)
+end
+
+# typical usecase of for loop
+V = rand(-1:0.01:1, 100,1)
+for i in 1:length(V)
+	println("$(i) th element is $(V[i])")
+end
+
+# more readable
+enumerate(V) # gives indices  and values as enumerate class
+for (idx,val) in enumerate(V)
+	println("$(idx)th element is $val")
+end
+
+
+# nested for loops
+M150 = rand(-1:0.01:1, 15,10)
+
+for r = 1:size(M150,1)
+	for c = 1:size(M150,2)
+		println("($r row, $c col) value = $(M150[r,c])")
+	end
+end
+
+# same but shorthand nested loop
+for r = 1:size(M150,1), c = 1:size(M150,2) # for OUTERLOOP, INNERLOOP
+		println("($r row, $c col) value = $(M150[r,c])")
+end
+
+# using multiple iteration variables
+X 
+Y
+Z # vectors
+
+for (x,y,z) in (X,Y,Z)
+end
+
+for (key, value) in dictionaryD
+end
+
+for charVar in StringVar
+	#charVar - is the individual characters of stringVar
+end
+
+
+# using file lines:
+for line in eachline(inputTxtFileFullpath)
+	# line is a string that is each line in the input text file
+end
+
+# WHILE loops - same as MATLAB
+x=0
+while x<10
+	println(x)
+	x+=1 # also good to denote LOCAL and GLOBAL variables clearly: 
+	# global x = x + 1
+end
+
+# eg. with local - this is infinite loop
+x=0
+while x<10
+	x=10
+	println(x)
+	local x+=1
+end
+
+# like MATLAB, we can use continue or break statements within conditionals or loops
+continue
+break
+
+# Like defining sets in mathematics: {2x+1 | x∈N}, we can use comprehensions to write for loops in shorthand form
+N = 1:10
+squares = [elem^2 for elem in N]
+evenSquares = [elem^2 for elem in N if elem%2 == 0]
+
+M = 1:15
+matrixSquares = [(x^2, y^2) for x in M, y in N] # Matrix (10x15) of tuples
+matrixSquares = [(x^2, y^2) for x in M for y in N] # vector (150) of tuples
+
+# if inner for loop depends on outer iterarion variable
+[i+j for i=1:10 for j=1:i] # note: we have to use 2nd for and separate them without comma but a space
+
+# A generator object is quickly created having some performace improvement as opposed to arrays
+# use this if you have large arrays
+(x^2 for x in 1:10) # Base.Generator{UnitRange{Int64}, var"#21#22"}(var"#21#22"(), 1:10)
+sum(x^2 for x in 1:10) # implicitly uses a generator
+
+# Performance demo using @time macro
+s = 0
+NUM = 100000000;
+@time  for i = 1:NUM s+=i^2; s end  # 2.77 sec
+@time sum([x^2 for x in 1:NUM]) # 0.263 sec
+@time sum(x^2 for x in 1:NUM) # 0.0293 sec MIND BLOWN!
+
+
+
