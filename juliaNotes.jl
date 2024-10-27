@@ -871,10 +871,76 @@ ysim_7_8 = similar(y, 7,8) # gives randomly generated values of same Matrix{Floa
 
 # Multidimenional arrays
 
-# example for 3d arrays:
-rows = 4
-cols = 5
-layers = 3 
+# examples:
+# use column wise filling
+M332 = [1;2;3;;4;5;6;;7;8;9;;;
+	10;11;12;;13;14;15;;16;17;18] # 3×3×2 Array{Int64, 3}
+# Access multidimension matrix  elements
+M332[2,3,2] # 17
+M332[17] # 17
 
-M3d = Matrix{UInt8}(undef, rows, cols, layers)
+# other ways of creation of multidimensional matrices:
+M3d = Matrix{Int32,3}(undef, 2, 3, 4) # error - use Array instead of Matrix
+M3d = Array{UInt8, 3}(undef, 2, 3, 4) # 2 rows, 3 cols, 4 layers
+# or
+M3d = Array{Int8}(undef, 2, 3, 4) # 2 rows, 3 cols, 4 layers
+M3d2 = reshape(1:24, 3,4,2)
+# 4 d array
+Z4d = zeros(Float32, 2,3,4,5)
+M3d2 = reshape(1:24, 3,4,2)
 
+
+# Broadcasting - (vector/matrix) element wise operations done easy
+
+
+
+V = 1:10
+N = 5
+
+V + N # error
+
+broadcast(+, V, N)
+# or
+V.+N
+
+# Apply to any operation:
+V.-N
+V./N
+V.>N
+V.==N
+V.^N
+
+# apply to any function: dot comes after the function name
+sin.(V)
+exp.(V)
+sqrt.(V)
+
+# polynomials made simple
+x = 0:.1:10
+# represent f = axx + bx + c
+a = 1
+b =-1
+c = 2
+f = (a.*x.^2).+(b.*x).+c
+
+# Try example with 2D matrix and 1D matrix
+Z = zeros(Int32, 10,8)
+o = ones(Int32, 10, 1)
+Z.+o # adds o column to all the Z columns
+o2 =  ones(Int32, 1, 10)
+Z.+o2 # error - dimension mismatch for broad casting
+o3 = ones(Int32, 1,8)
+Z.+o3 # adds the o3 row to all the Z rows
+
+
+# boolean indexing using broadcasting: to get there it is slightly different from MATLAB
+V = 1:10
+N = 3
+VgeN = V[V.>=N] # in MATLAB it is just V(V>=N)
+VdivisibleByN = V[(V.%N).==0]
+
+# boolean indexing with 2D and 1D matrices: eget divisible numbers columnwise
+M3 = rand(1:100, 10,3)
+NDiv = [2 3 4] # provide row matrix
+
+MDivbyN = M3[(M3.%NDiv).== 0]
