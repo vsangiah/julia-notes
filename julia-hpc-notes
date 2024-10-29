@@ -1,1 +1,243 @@
 
+Notes and takeaways from MPAGS Julia HPC sessions
+
+
+
+Module 1 :Hardware and software basics
+
+Memory:
+Permanent memory:
+	HDDs(slower RW) have high latencies as opposed to SSDs(higher RW)
+Main(Random access) Memory: 
+	volatile - loses info after power off
+	high speeds (order of magnitude greater than SSDs)
+	very low latencies (10-20ns)
+
+1Byte is the smallest unit of addressable memory: even if you want to represent bools whjich technically requires 1 bit for true false, you would need 8bits chunk to represent it in machine
+
+Central processing unit:
+	perform the bulk of calculations: logical/arithmetic and interface with all I/Os and memory storages
+	They have multiple cores each of which is responsible for independent calculations
+	CPU has local storage: L1, L2, L3 caches
+	[Insert pic of von neumann architecture]
+	Data and memory stored together in memory (registers{temp memory} in case of CPU) [memory address register, memory data register]
+	Program counter register - stores the address of instruction
+	bus - connecting highways to transport info to i/o or storage
+
+Modern CPUI architectures:
+x86 architecture - 32 bit wide instruction set
+x86_64 architecture - 64 bit wide instruction set
+ARM - stripped down moder version of x86
+
+[Insert the image of labelled CPU surface]
+
+How memory gets RW:
+
+CPU has to send out an instruction to find the memory in RAM and bring it to the core: goes via the L1 , L2, L3 cache. If CPU finds that data in L1 or L2 itself, it just skips the  asking the upper levels.
+Once the memory is brought from RAM and used by CPU core , it stays in L1 or L2 cache - optimisation technique. Trip to RAM is time consuming as opposed to doing everything within CPUs (eg. 1ns vs 10ns)
+L1 L2 L3 - expensive to make as it has to be etched in the same dye - small capacity: 64kB L1, 512kB L2, 8MB L3 are typical numbers
+
+[RAM]      [high capacity: GBs]
+^    v slow
+L3 Cache   [capacity: ] for every 2 cores
+^    v fast
+L2 Cache  [capacity: ] for every 2 cores
+^    v fast 
+L1 Cache per CPU core [capacity: ]
+^    v fast
+[CPU Core]
+
+CPU has 4 to 16 cores that perform the calculations, GPU has 1000 cores
+
+
+Software -how it's run?
+OS software - 
+	abstraction to human interface, its placement:  user <-> apps <-> OS <-> hardware
+	manages hardware and software resources
+	provides utilities like disk, networkk
+	controls loading and scheduling of software tasks - agian layer of abstraction
+	provides virtual memory chunks for processes
+	HPC is deloped in Linus
+
+Encoding:
+	machines understand binary
+	datatype is needed to interpret how these numbers are and how calculations/operations are performed on them
+
+	Integers
+	8 bits signed integer - 8th bit is used for sign => N = (-1)^[8th bit value] 2^7 + [7th bit value] 2^6  + ... [1st bit value] 2^0
+	8bits unsigned integer - uses all the 8bits 
+	
+	Floating point numbers (IEEE754 is mostly used)
+	Float 32: 1st bit is used for sign, 8bits are exponent, 23 bits are mantissa
+	N = (-1)^[32th bit value]x( 1 +  m / 2^23 )x 2^( e - 127 )
+		- fft: imagine how floating point numbers are getting added
+
+	Boolean - true or false
+
+	Characters - ASCII 
+	
+	
+Compilation:
+Need to convert HLL code to LLL code (assembly) which wiill be later converted to binary instructions to CPU machine
+HLL to assembly is called compilation process
+
+How julia compialtion works:
+
+
+Compile time: 
+The julia source code is parsed to an Abstract Syntax Tree - [ to get this AST, try Meta.parse to get first stage, @macroexpand to get the expanded tree which is the second stage of AST]
+this parsed AST expanded gets converted to Intermediate Representation - [to get the IR,, try @code_lowered]
+lowered IR (easy to read) will infer the data types - this partially is controlled in runtime usss Method Dispatch to get IR
+IR -> SSA(IR) optimized - [to get this optimized representation, try @code_typed]
+SSA(IR) translated to LLVM IR which then gets converted to native code - [to get this native code, try @code_native]
+
+Run time:
+The native code is then executed
+While executing - it goes through function calls and there will be method dispatches which will also play a role in infering data types and corresponding operations in getting the IR (@code_lowered)
+
+
+LLVM compiler infrastructure:
+	resualble toolchain for all languages
+	front-end to generate LLVM IR
+	provides backends forany architectures x86, x86_64, ARM
+	Julia, Rust, C++, Python use LLVM tech
+
+
+
+
+# Example:
+
+julia> f(x) = 3*x*x + 2*x + 1
+julia> @code_lowered f(5)
+CodeInfo(
+1 ─ %1 = Main.:+
+│   %2 = Main.:*
+│   %3 = (%2)(3, x, x)
+│   %4 = Main.:*
+│   %5 = (%4)(2, x)
+│   %6 = (%1)(%3, %5, 1)
+└──      return %6
+)
+
+julia> f2(x) = 30*x*x + 20*x + 40
+julia> @code_typed f2(2.0)
+CodeInfo(
+1 ─ %1 = Base.mul_float(30.0, x)::Float64
+│   %2 = Base.mul_float(%1, x)::Float64
+│   %3 = Base.mul_float(20.0, x)::Float64
+│   %4 = Base.add_float(%2, %3)::Float64
+│   %5 = Base.add_float(%4, 40.0)::Float64
+└──      return %5
+) => Float64
+
+
+julia>  @code_llvm debuginfo=:none f(11)
+; Function Signature: f(Int64)
+; Function Attrs: uwtable
+define i64 @julia_f_2689(i64 signext %"x::Int64") #0 {
+top:
+  %0 = mul i64 %"x::Int64", 30
+  %1 = add i64 %0, 20
+  %2 = mul i64 %1, %"x::Int64"
+  %3 = add i64 %2, 20
+  ret i64 %3
+}
+
+julia>  @code_native debuginfo=:none f(11)
+        .text
+        .file   "f"
+        .globl  julia_f_2783                    # -- Begin function julia_f_2783
+        .p2align        4, 0x90
+        .type   julia_f_2783,@function
+julia_f_2783:                           # @julia_f_2783
+; Function Signature: f(Int64)
+        .cfi_startproc
+# %bb.0:                                # %top
+        #DEBUG_VALUE: f:x <- $rcx
+        push    rbp
+        .cfi_def_cfa_offset 16
+        .cfi_offset rbp, -16
+        mov     rbp, rsp
+        .cfi_def_cfa_register rbp
+        mov     rax, rcx
+        shl     rax, 5
+        sub     rax, rcx
+        sub     rax, rcx
+        add     rax, 20
+        imul    rax, rcx
+        add     rax, 20
+        pop     rbp
+        ret
+.Lfunc_end0:
+        .size   julia_f_2783, .Lfunc_end0-julia_f_2783
+        .cfi_endproc
+                                        # -- End function
+        .section        ".note.GNU-stack","",@progbits
+
+julia> @code_llvm debuginfo=:none f(2.0)+f(1)
+; Function Signature: +(Float64, Int64)
+; Function Attrs: uwtable
+define double @"julia_+_3362"(double %"x::Float64", i64 signext %"y::Int64") #0 {
+top:
+  %0 = sitofp i64 %"y::Int64" to double
+  %1 = fadd double %0, %"x::Float64"
+  ret double %1
+}
+
+
+
+
+
+
+
+# Example 2# If there are constants in the code, they ll be evaluated before hand
+julia> function mysum()
+           s=0
+           for i = 1:10000
+               s+=i
+                   end
+           return s
+       end
+mysum (generic function with 1 method)
+
+julia> @code_llvm debuginfo=:none mysum()
+; Function Signature: mysum()
+; Function Attrs: uwtable
+define i64 @julia_mysum_3979() #0 {
+top:
+  ret i64 50005000
+}
+
+
+# Example 3 divide vs multiply
+
+ function g(x::Float64)
+       for i=1:1000
+           x/=7
+           end
+           x
+           end
+g (generic function with 1 method)
+
+julia> @btime g(1.0)
+  2.800 μs (0 allocations: 0 bytes)
+0.0
+
+julia> function g(x::Float64)
+       for i=1:1000
+           x*=0.14285714285714285
+           end
+           x
+           end
+g (generic function with 1 method)
+
+julia> @btime g(1.0)
+  643.976 ns (0 allocations: 0 bytes)
+0.0
+
+!! This is 4.3 times fast
+
+
+
+
+
