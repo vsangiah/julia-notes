@@ -238,6 +238,89 @@ julia> @btime g(1.0)
 !! This is 4.3 times fast
 
 
+# SIMD - Single Instruction Multiple Data
+
+Modern cpu have wide registers (temporary memory storages) - typically 256bit (with xeon,epyc processors) wide which can pack 4 x 64 bit values or 8 x 32 bit values in a single operations
+ALU has special circuits to process these packs of data in the registers
+This is parallelism at the hardware level perpective
+
+example:
+[x1;x2] + [y1;y2] = [x1+y1; x2+y2] happens in a single clock cycle:
+addition of the numbers which are independent and storing of the result happens in one clock cycle
+
+There are instruction sets (ISAs):
+	SSE - Streaming SIMD Extensions supported in x86, x86_64 some are not supported for ARM
+	Advanced Vector Extensions (AVX) - an advanced version of SSE eg AVX512 for large vectors
+	Usually both these are included in workstation porcessors like Xeon, Epyc, Threadripper etc
+	Notebook PC processors might only have SSE but not AVX
+
+For your Linux machine:
+ From a terminal, run “cat /proc/cpuinfo”. “sse2” will be listed as one of the “flags” if SSE2 is available.
+Or for your Windows machine download CPUZ - https://www.cpuid.com/softwares/cpu-z.html
+
+# Normal code:
+function SUM_NORMAL(arr)
+	sum = 0;
+	for i in arr
+		sum+=i
+	end
+	sum
+end
 
 
+# Add vector instructions to the for loop by using @simd macro (MACRO is meta programming construct - program to write more program)
+	- Write @simd in front of for loops to promise that the iterations are independent and may be reordered. 
+
+function SUM_SIMD(N)
+	sum=0;
+	@simd for i in arr
+		sum+=i
+	end
+	sum
+end
+
+# Floating point arithmetic is not associative: (a+b)+c != a+(b+c)
+So you'll get slightly differernt answers
+
+# Benchmark results
+julia> @btime SUM_NORMAL(rnum)
+  57.520 ns
+
+julia> @btime SUM_SIMD(rnum)
+  38.710 ns
+
+There will be better differnce when there is a better support for ISAs maybe.. (try this with any super computer)
+
+Floating-point operations on reduction variables can be reordered or contracted, possibly causing different results than without @simd
+
+Incorrect use of the @simd macro may cause unexpected results.
+
+
+
+## Stack and Heap - lower level detail
+
+	stack is a data structure - typically linear - access order is definitive (take the items only from the top ie LIFO)
+	Demo of stack: adding a and b could be done by infix, prefix, postfix:
+		a+b
+		+(a,b)
+		(a,b)+
+	Usually computers use postfix to simplify their execution order
+	eg: 5x(x+1)-1 is evaulated using this below
+	POSTFIX notation: 1 5 x 2 x + * * - (dont need brackets)
+	Imagine CPU has ALU + R1 R2 registers and sidebyside with a memory stack
+	First populate the memory stack from left to right - only numbers coming so far
+	Encounter a operator: pop 2 items to the two registers and evaluate the expression and store in R1
+	
+	push the value in R1 to the memory stack 
+	R2 will get overwritten
+
+ 	repeat the process
+
+	Stack is mainly used for function calls via stack frames (imagine piled up in memory stack) where eventually the result comes up in the top.
+
+
+Advantages of using stack:
+	all the intermediate variables %1 %2 ... etc are local variables - we dont need to keep track of them when the stack memory is not used.
+	we can just move the stack pointer to next and forget the previous state.
+	
 
