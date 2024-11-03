@@ -672,6 +672,9 @@ d33 = mergewith(*,d1,d2) # Dict{String, Int64} with 3 entries:  "day"  => 62  "y
 
 # Ranges and arrays:
 # Ranges derived from: Any -> AbstractVector -> AbstractRange -> OrdinalRange -> AbstractUnitRange and StepRange
+# These are single units, they are not treated like multielement vectors
+# use this with caution as, map(), filter() and reduce() workwith vectors and matrices
+# use collect(ranges) to get a vector
 x=1:10
 y=2:2:100
 z=102.4:-2.35:34.54
@@ -1116,4 +1119,82 @@ NUM = 100000000;
 @time sum(x^2 for x in 1:NUM) # 0.0293 sec MIND BLOWN!
 
 
+
+
+# Functions
+
+# tuple of input arguments and output arg or tuple of outputs
+
+#oneliner
+NAME_OF_FUNC(ARGS) = ONE_LINE_BODY_OF_THE_FUNCTION;
+
+# multi liner
+function NAME_OF_FUNC(ARGS)
+	BODY_OF_THE_FUNCTION
+end
+
+# BY Default arguments are passed by sharing, so we shall see the impact of the function body outside of the function if the input is a mutable
+function foo(x,y)
+	x[1] =22; # the passed argument mutates
+	y+=33 # the passed argument does not mutate
+end
+
+
+# we can copy the function name to anotehr name and use the latter for the same
+bar = foo;
+bar(X,Y)
+mul = *;
+mul(X,Y)
+
+# to specify the return type of a function and input argument 
+function foo(x::Vector{Int64}, y::Int64)::Int64
+	x[1] =22; # the passed argument mutates
+	y+=33 # the passed argument does not mutate
+end
+
+# you can also return "nothing"
+function baz(x)
+	println(x)
+	return nothing;
+end
+
+# anonymous functions
+
+x -> 3x+5
+f = x-> 3*x+33
+(x,y,z) -> x+y+z
+
+# recursive
+fact = n::Int64 -> (n==1) ? 1 : n*fact(n-1)
+
+
+# Map, broadcast, reduce, filter
+# higher order functions that makes code simpler
+
+# MAP or BROADCAST=== CELLFUN/ARRAYFUN in MATLAb
+arr = [1:0.1:100]
+PolynomialArr = map(x -> 3x^3 + 4x^2 - 14x + 54, arr) # does not work with unit/stepped ranges
+arr =  collect(arr)
+PolynomialArr = map(x -> 3x^3 + 4x^2 - 14x + 54, arr) # works
+
+rowvector = [1 2 3 4 5;]
+columnvector = [10;20;30;40;50]
+map(+, rowvector, columnvector) # gives column vector
+broadcast(+,rowvector, columnvector) # gives matrix
+
+
+# reduce: reduce all elements to one element
+reduce(+,columnvector)
+reduce((x,y)->(x+y)^2,columnvector)
+ reduce(x->(x-10)^2,columnvector) # does not work
+
+# combo:
+arr = [1;2;3;;2;3;4;;3;4;5]
+sq = map(x->x^2, arr)
+sumsq = reduce(+,sq)
+#or
+mapreduce(x->x^2,+,arr)
+
+# Filter (simlar to boolean indexing)
+filter(x-> x*x%3==0, arr)
 
